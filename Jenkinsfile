@@ -23,7 +23,7 @@ pipeline{
 
                 stage('deploy'){
                         
-                        label{
+                        agent{
                                 label 'slave-1'
                         }
 
