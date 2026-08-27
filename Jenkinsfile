@@ -9,17 +9,11 @@ pipeline{
         }            
         
         stages{
-                stage('clone'){
-
-                            steps{
-                                    git 'https://github.com/aayushthite/LoginWebApp.git'
-                            }
-
-                }
-
                 stage('complie'){
 
                             steps{
+                                    sh "rm -rf /root/.m2/repository"
+                                    sh "rm -rf /root/.jenkins/workspace/LoginWebApp/target/*"
                                     sh "mvn clean install"
                             }
                 }
