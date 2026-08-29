@@ -19,7 +19,8 @@ pipeline{
 
                 stage('deploy'){
                         steps{
-                                sh "sudo cp /target/*.war /mnt/apache-tomcat-10.1.59/webapps/"
+                                sh "sudo cp /mnt/slave-1/workspace/assignment_11_Project/target/*.war \
+                                /mnt/apache-tomcat-10.1.59/webapps/"
                         }
                 }
         }
