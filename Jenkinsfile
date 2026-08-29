@@ -19,7 +19,7 @@ pipeline{
 
                 stage('deploy'){
                         steps{
-                                sh "sudo cp /targets/*.war /mnt/apache-tomcat-10.1.59/webapps/"
+                                sh "sudo cp /target/*.war /mnt/apache-tomcat-10.1.59/webapps/"
                         }
                 }
         }
