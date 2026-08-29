@@ -13,20 +13,21 @@ pipeline{
 
                             steps{
                                     sh "rm -rf /root/.m2/repository"
-                                    sh "rm -rf /root/.jenkins/workspace/LoginWebApp/target/*"
                                     sh "mvn clean package"
-                                    sh "ls -lh target/"
                                     sh "pwd"
+                                    sh "whoami && echo $HOME"
                             }
                 }
 
-                stage('archive-WAR') {
+                stage('stash-WAR') {
                         
                             steps {
-                                    stash name: 'loginwebapp-war-Aayush',
+                                    sh "pwd"    
+                                    stash name: 'LoginWebApp-war',
                                     includes: 'target/*.war'
-                                    sh "ls -lh target/"
                                     sh "pwd"
+                                    sh "whoami && echo $HOME"
+                                    
                                 }
                  }
 
@@ -41,6 +42,7 @@ pipeline{
                                    unstash 'loginwebapp-war-Aayush'
                                    sh "ls -lh target/"
                                    sh "pwd"
+                                   sh "whoami && echo $HOME"
                                    sh "sudo cp target/*.war /mnt/apache-tomcat-10.1.59/webapps/"
                             }
                 }
