@@ -1,27 +1,25 @@
 pipeline{
+          agent{
+                  label 'built-in'
+                  customWorkspace '/mnt/project/'
+          }
 
-        agent {
-                label 'slave-1'
-        }
 
-        tools{
+      tools{
+              maven 'Maven_auto'
+      }
 
-                maven 'maven-auto'
-        }
+      stages{
+        
+              stage('package'){
+              
+                      steps{
+                              sh "clean package"
+                      }
 
-        stages{
+              }
+        
+        
+      }
 
-                stage('complie'){
-                        steps{
-                                sh "mvn clean package"
-                        }
-                }
-
-                stage('deploy'){
-                        steps{
-                                sh "sudo cp /mnt/slave-1/workspace/assignment_11_Project/target/*.war \
-                                /mnt/apache-tomcat-10.1.59/webapps/"
-                        }
-                }
-        }
 }
