@@ -13,12 +13,29 @@ pipeline{
 
       stages{
         
-              stage('package'){
+              stage('package-war_FILE'){
 
                       steps{
                               sh 'mvn clean package'
                       }
 
+              }
+
+              stage('Ansible--check'){
+              
+                        steps{
+                                sh 'ansible-playbook -i hosts test.yaml --syntax-check'
+                        
+                        }
+              }
+
+              
+              stage('Deploy'){
+              
+                        steps{
+                                sh 'ansible-playbook -i hosts test.yaml'
+                        
+                        }
               }
         
         
