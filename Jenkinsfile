@@ -1,5 +1,5 @@
 pipeline{
-          agent{
+          label {
                   label 'built-in'
                   customWorkspace '/mnt/project/'
           }
@@ -12,7 +12,7 @@ pipeline{
       stages{
         
               stage('package'){
-              
+
                       steps{
                               sh "clean package"
                       }
