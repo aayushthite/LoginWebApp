@@ -1,0 +1,16 @@
+services:
+
+  LoginWebApp:
+
+    image: tomcat
+    container_name: c1
+    networks: 
+      - velocity
+    volumes:
+      -/mnt/project/targets/LoginWebApp.war:/usr/local/tomcat/webapps/
+    ports:
+      - 8080:8080
+
+networks:
+  velocity:
+    driver: bridge
