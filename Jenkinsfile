@@ -1,19 +1,20 @@
 pipeline{
-          agent { 
-                  label{
+
+        agent { 
+                label{
+
                       label 'built-in'
                       customWorkspace '/mnt/project/'
-                  }
-          }
+                }
+        }
 
 
-      tools{
+        tools{
               maven 'Maven_auto'
-      }
+        }
 
-      stages{
-        
-              stage('package-war_FILE'){
+        stages{
+              stage('package-war-file'){
 
                       steps{
                               sh 'mvn clean package'
@@ -21,24 +22,6 @@ pipeline{
 
               }
 
-              stage('Ansible--check'){
-              
-                        steps{
-                                sh 'ansible-playbook -i hosts test.yaml --syntax-check'
-                        
-                        }
-              }
-
-              
-              stage('Deploy'){
-              
-                        steps{
-                                sh 'ansible-playbook -i hosts test.yaml'
-                        
-                        }
-              }
-        
-        
-      }
+        }
 
 }
