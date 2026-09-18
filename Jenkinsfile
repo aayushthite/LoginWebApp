@@ -17,6 +17,7 @@ pipeline{
               stage('package-war-file'){
 
                       steps{
+                              sh 'sudo rm -rf /mnt/project/target/LoginWebApp.war'   
                               sh 'mvn clean package'
                       }
 
