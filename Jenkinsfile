@@ -13,15 +13,16 @@ pipeline {
 
     stages {
 
-        stage('Build WAR') {
+        stage('Build') {
             steps {
                 sh 'mvn clean package'
             }
         }
 
-        stage('Deploy WAR') {
+        stage('Deploy') {
             steps {
                 sh '''
+                    sudo rm -rf /mnt/web-server/apache-tomcat-10.1.60/webapps/LoginWebApp
                     sudo rm -f /mnt/web-server/apache-tomcat-10.1.60/webapps/LoginWebApp.war
 
                     sudo cp /mnt/project/target/LoginWebApp.war \
@@ -34,7 +35,7 @@ pipeline {
             steps {
                 sh '''
                     sudo /mnt/web-server/apache-tomcat-10.1.60/bin/shutdown.sh || true
-                    sleep 5
+                    sleep 10
                     sudo /mnt/web-server/apache-tomcat-10.1.60/bin/startup.sh
                 '''
             }
