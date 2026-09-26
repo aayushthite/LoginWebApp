@@ -22,11 +22,11 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    sudo rm -rf /mnt/web-server/apache-tomcat-10.1.60/webapps/LoginWebApp
-                    sudo rm -f /mnt/web-server/apache-tomcat-10.1.60/webapps/LoginWebApp.war
+                    sudo rm -rf /root/temp/apache-tomcat-10.1.60/webapps/LoginWebApp
+                    sudo rm -f /root/temp/apache-tomcat-10.1.60/webapps/LoginWebApp.war
 
                     sudo cp /mnt/project/target/LoginWebApp.war \
-                    /mnt/web-server/apache-tomcat-10.1.60/webapps/
+                    /root/temp/apache-tomcat-10.1.60/webapps
                 '''
             }
         }
@@ -34,9 +34,9 @@ pipeline {
         stage('Restart Tomcat') {
             steps {
                 sh '''
-                    sudo /mnt/web-server/apache-tomcat-10.1.60/bin/shutdown.sh || true
+                    sudo /root/temp/apache-tomcat-10.1.60/bin/shutdown.sh || true
                     sleep 10
-                    sudo /mnt/web-server/apache-tomcat-10.1.60/bin/startup.sh
+                    sudo /root/temp/apache-tomcat-10.1.60//bin/startup.sh
                 '''
             }
         }
