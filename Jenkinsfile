@@ -1,7 +1,6 @@
 pipeline {
 
     agent {
-
         label {
             label 'built-in'
             customWorkspace '/mnt/project/'
@@ -23,36 +22,9 @@ pipeline {
 
     stages {
 
-        stage('Build') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh '''
-                    sudo rm -rf /mnt/web-server/apache-tomcat-10.1.60/webapps/LoginWebApp
-                    sudo rm -f /mnt/web-server/apache-tomcat-10.1.60/webapps/LoginWebApp.war
-
-                    sudo cp /mnt/project/target/LoginWebApp.war \
-                    /mnt/web-server/apache-tomcat-10.1.60/webapps/
-                '''
-            }
-        }
-
-        stage('Restart Tomcat') {
-            steps {
-                sh '''
-                    sudo //mnt/web-server/apache-tomcat-10.1.60/bin/shutdown.sh || true
-                    sleep 10
-                    sudo /mnt/web-server/apache-tomcat-10.1.60/bin/startup.sh
-                '''
-            }
-        }
-
         stage('Configure RDS Credentials') {
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'rds-db-credentials',
@@ -64,17 +36,33 @@ pipeline {
                     sh '''
                         echo "Configuring application database credentials..."
 
-                        sed -i "s|DB_USERNAME|${DB_USERNAME}|g" userRegistration.jsp
-                        sed -i "s|DB_PASSWORD|${DB_PASSWORD}|g" userRegistration.jsp
+                        sed -i "s|DB_USERNAME|${DB_USERNAME}|g" \
+                        src/main/webapp/userRegistration.jsp
 
-                        echo "Application database configuration completed."
+                        sed -i "s|DB_PASSWORD|${DB_PASSWORD}|g" \
+                        src/main/webapp/userRegistration.jsp
+
+                        echo "RDS credentials configured."
                     '''
                 }
             }
         }
 
+        stage('Build') {
+            steps {
+
+                sh '''
+                    mvn clean package
+
+                    echo "WAR created:"
+                    ls -lh target/LoginWebApp.war
+                '''
+            }
+        }
+
         stage('Configure RDS Database') {
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'rds-db-credentials',
@@ -87,9 +75,9 @@ pipeline {
                         echo "Connecting to AWS RDS..."
 
                         mysql \
-                          -h ${DB_HOST} \
-                          -u ${DB_USERNAME} \
-                          -p${DB_PASSWORD} \
+                          -h "${DB_HOST}" \
+                          -u "${DB_USERNAME}" \
+                          -p"${DB_PASSWORD}" \
                           -e "
                             CREATE DATABASE IF NOT EXISTS ${DB_NAME};
 
@@ -116,8 +104,64 @@ pipeline {
             }
         }
 
+        stage('Deploy') {
+            steps {
+
+                sh '''
+                    echo "Stopping/removing old application..."
+
+                    sudo rm -rf ${TOMCAT_HOME}/webapps/${APP_NAME}
+                    sudo rm -f ${TOMCAT_HOME}/webapps/${WAR_NAME}
+
+                    echo "Deploying new WAR..."
+
+                    sudo cp target/${WAR_NAME} \
+                    ${TOMCAT_HOME}/webapps/
+
+                    echo "WAR deployed:"
+                    ls -lh ${TOMCAT_HOME}/webapps/${WAR_NAME}
+                '''
+            }
+        }
+
+        stage('Restart Tomcat') {
+            steps {
+
+                sh '''
+                    echo "Stopping Tomcat..."
+
+                    sudo ${TOMCAT_HOME}/bin/shutdown.sh || true
+
+                    sleep 10
+
+                    echo "Starting Tomcat..."
+
+                    sudo ${TOMCAT_HOME}/bin/startup.sh
+
+                    sleep 10
+
+                    echo "Tomcat process:"
+
+                    ps -ef | grep '[t]omcat' || true
+                '''
+            }
+        }
+
+        stage('Verify Application') {
+            steps {
+
+                sh '''
+                    echo "Testing LoginWebApp..."
+
+                    curl -I --max-time 15 \
+                    http://localhost:8080/${APP_NAME}/ || true
+                '''
+            }
+        }
+
         stage('Verify RDS Data') {
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'rds-db-credentials',
@@ -127,13 +171,13 @@ pipeline {
                 ]) {
 
                     sh '''
-                        echo "Checking USER table in RDS..."
+                        echo "Checking RDS USER table..."
 
                         mysql \
-                          -h ${DB_HOST} \
-                          -u ${DB_USERNAME} \
-                          -p${DB_PASSWORD} \
-                          ${DB_NAME} \
+                          -h "${DB_HOST}" \
+                          -u "${DB_USERNAME}" \
+                          -p"${DB_PASSWORD}" \
+                          "${DB_NAME}" \
                           -e "SHOW TABLES; SELECT * FROM USER;"
                     '''
                 }
@@ -141,6 +185,30 @@ pipeline {
         }
     }
 
+    post {
 
+        success {
+            echo '''
+========================================
+ DEPLOYMENT SUCCESSFUL
+========================================
+ Application : LoginWebApp
+ Tomcat      : 8080
+ Database    : AWS RDS MySQL
+ Database    : test
+ Table       : USER
+========================================
+'''
+        }
 
+        failure {
+            echo '''
+========================================
+ DEPLOYMENT FAILED
+========================================
+Check the Jenkins Console Output.
+========================================
+'''
+        }
+    }
 }
