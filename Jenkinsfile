@@ -10,7 +10,7 @@ pipeline {
         PROJECT_DIR = '/mnt/project'
         TOMCAT_HOME = '/mnt/web-server/apache-tomcat-10.1.60'
 
-        RDS_HOST = 'velocity-db.c502c4e2yh9.ap-south-1.rds.amazonaws.com'
+        RDS_HOST = 'velocity-db.c502c4e2yh9e.ap-south-1.rds.amazonaws.com'
         DB_NAME  = 'test'
     }
 
