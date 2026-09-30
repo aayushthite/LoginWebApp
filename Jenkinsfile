@@ -9,9 +9,9 @@ pipeline {
     environment {
         PROJECT_DIR = '/mnt/project'
         TOMCAT_HOME = '/mnt/web-server/apache-tomcat-10.1.60'
-        RDS_HOST    = 'velocity-db.c502c4e2yh9e.ap-south-1.rds.amazonaws.com'
-        RDS_USER    = 'admin'
-        DB_NAME     = 'test'
+
+        RDS_HOST = 'velocity-db.c502c4e2yh9e9.ap-south-1.rds.amazonaws.com'
+        DB_NAME  = 'test'
     }
 
     stages {
@@ -19,9 +19,10 @@ pipeline {
         stage('Configure RDS Credentials') {
             steps {
                 withCredentials([
-                    string(
+                    usernamePassword(
                         credentialsId: 'rds-db-credentials',
-                        variable: 'DB_PASSWORD'
+                        usernameVariable: 'RDS_USER',
+                        passwordVariable: 'DB_PASSWORD'
                     )
                 ]) {
                     sh '''
@@ -59,9 +60,10 @@ pipeline {
         stage('Configure RDS Database') {
             steps {
                 withCredentials([
-                    string(
+                    usernamePassword(
                         credentialsId: 'rds-db-credentials',
-                        variable: 'DB_PASSWORD'
+                        usernameVariable: 'RDS_USER',
+                        passwordVariable: 'DB_PASSWORD'
                     )
                 ]) {
                     sh '''
@@ -124,21 +126,22 @@ pipeline {
                     echo "Restarting Tomcat"
                     echo "========================================"
 
-                    if [ -f "$TOMCAT_HOME/bin/shutdown.sh" ]; then
-                        "$TOMCAT_HOME/bin/shutdown.sh" || true
-                    fi
+                    "$TOMCAT_HOME/bin/shutdown.sh" || true
 
                     sleep 5
 
                     if pgrep -f "org.apache.catalina.startup.Bootstrap" > /dev/null; then
-                        echo "Tomcat is still running. Terminating old process..."
+                        echo "Tomcat is still running."
+                        echo "Stopping remaining Tomcat process..."
+
                         pkill -f "org.apache.catalina.startup.Bootstrap" || true
+
                         sleep 3
                     fi
 
                     "$TOMCAT_HOME/bin/startup.sh"
 
-                    echo "Waiting for Tomcat to start..."
+                    echo "Waiting for Tomcat..."
                     sleep 10
 
                     echo "Tomcat process:"
@@ -154,12 +157,12 @@ pipeline {
                     echo "Verifying Application"
                     echo "========================================"
 
-                    echo "Checking Tomcat port 8080..."
-
                     if curl -f --max-time 15 \
-                        http://localhost:8080/LoginWebApp/ > /tmp/app_response.html
+                        http://localhost:8080/LoginWebApp/ \
+                        > /tmp/app_response.html
                     then
                         echo "Application is UP."
+
                         echo "Application response:"
                         head -20 /tmp/app_response.html
                     else
@@ -173,9 +176,10 @@ pipeline {
         stage('Verify RDS Data') {
             steps {
                 withCredentials([
-                    string(
+                    usernamePassword(
                         credentialsId: 'rds-db-credentials',
-                        variable: 'DB_PASSWORD'
+                        usernameVariable: 'RDS_USER',
+                        passwordVariable: 'DB_PASSWORD'
                     )
                 ]) {
                     sh '''
