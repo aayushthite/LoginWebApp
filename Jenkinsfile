@@ -20,7 +20,7 @@ pipeline {
             steps {
                 withCredentials([
                     string(
-                        credentialsId: 'RDS_DB_PASSWORD',
+                        credentialsId: 'rds-db-credentials',
                         variable: 'DB_PASSWORD'
                     )
                 ]) {
@@ -60,7 +60,7 @@ pipeline {
             steps {
                 withCredentials([
                     string(
-                        credentialsId: 'RDS_DB_PASSWORD',
+                        credentialsId: 'rds-db-credentials',
                         variable: 'DB_PASSWORD'
                     )
                 ]) {
@@ -174,7 +174,7 @@ pipeline {
             steps {
                 withCredentials([
                     string(
-                        credentialsId: 'RDS_DB_PASSWORD',
+                        credentialsId: 'rds-db-credentials',
                         variable: 'DB_PASSWORD'
                     )
                 ]) {
