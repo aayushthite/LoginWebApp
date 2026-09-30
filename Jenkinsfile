@@ -10,13 +10,13 @@ pipeline {
         PROJECT_DIR = '/mnt/project'
         TOMCAT_HOME = '/mnt/web-server/apache-tomcat-10.1.60'
 
-        RDS_HOST = 'velocity-db.c502c4e2yh9e.ap-south-1.rds.amazonaws.com'
+        RDS_HOST = 'velocity-db.c502c4e2yh9.ap-south-1.rds.amazonaws.com'
         DB_NAME  = 'test'
     }
 
     stages {
 
-        stage('Configure RDS Credentials') {
+        stage('Configure Application Database') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -27,16 +27,30 @@ pipeline {
                 ]) {
                     sh '''
                         echo "========================================"
-                        echo "Configuring application database credentials"
+                        echo "Configuring Application Database"
                         echo "========================================"
 
-                        sed -i "s|DB_USERNAME|${RDS_USER}|g" \
+                        echo "RDS Host:"
+                        echo "$RDS_HOST"
+
+                        echo "RDS User:"
+                        echo "$RDS_USER"
+
+                        echo "Updating userRegistration.jsp..."
+
+                        sed -i "s|jdbc:mysql://localhost:3306/test|jdbc:mysql://${RDS_HOST}:3306/${DB_NAME}|g" \
                             src/main/webapp/userRegistration.jsp
 
-                        sed -i "s|DB_PASSWORD|${DB_PASSWORD}|g" \
+                        sed -i 's|"root", "root"|"'"${RDS_USER}"'", "'"${DB_PASSWORD}"'"|g' \
                             src/main/webapp/userRegistration.jsp
 
-                        echo "RDS credentials configured."
+                        echo "Database configuration updated."
+
+                        echo "Checking configured JDBC URL:"
+                        grep -n "DriverManager.getConnection" \
+                            src/main/webapp/userRegistration.jsp
+
+                        echo "========================================"
                     '''
                 }
             }
@@ -51,7 +65,10 @@ pipeline {
 
                     mvn clean package
 
+                    echo "========================================"
                     echo "WAR created:"
+                    echo "========================================"
+
                     ls -lh target/LoginWebApp.war
                 '''
             }
@@ -96,7 +113,9 @@ pipeline {
                                 DESCRIBE USER;
                             "
 
-                        echo "RDS database configuration completed successfully."
+                        echo "========================================"
+                        echo "RDS database configuration completed."
+                        echo "========================================"
                     '''
                 }
             }
@@ -131,6 +150,7 @@ pipeline {
                     sleep 5
 
                     if pgrep -f "org.apache.catalina.startup.Bootstrap" > /dev/null; then
+
                         echo "Tomcat is still running."
                         echo "Stopping remaining Tomcat process..."
 
@@ -142,10 +162,16 @@ pipeline {
                     "$TOMCAT_HOME/bin/startup.sh"
 
                     echo "Waiting for Tomcat..."
+
                     sleep 10
 
                     echo "Tomcat process:"
+
                     pgrep -af "org.apache.catalina.startup.Bootstrap" || true
+
+                    echo "========================================"
+                    echo "Tomcat restart completed."
+                    echo "========================================"
                 '''
             }
         }
@@ -161,14 +187,24 @@ pipeline {
                         http://localhost:8080/LoginWebApp/ \
                         > /tmp/app_response.html
                     then
+
                         echo "Application is UP."
 
                         echo "Application response:"
                         head -20 /tmp/app_response.html
+
                     else
+
                         echo "Application verification failed."
+
+                        echo "Checking Tomcat logs..."
+
+                        tail -50 "$TOMCAT_HOME/logs/catalina.out" || true
+
                         exit 1
                     fi
+
+                    echo "========================================"
                 '''
             }
         }
@@ -201,7 +237,9 @@ pipeline {
                                 FROM USER;
                             "
 
-                        echo "RDS verification completed successfully."
+                        echo "========================================"
+                        echo "RDS verification completed."
+                        echo "========================================"
                     '''
                 }
             }
@@ -209,16 +247,22 @@ pipeline {
     }
 
     post {
+
         success {
             echo '''
 ========================================
  DEPLOYMENT SUCCESSFUL
 ========================================
-WAR built successfully.
-RDS database configured.
-WAR deployed to Tomcat.
-Application verified.
-RDS database verified.
+
+Git checkout                  : SUCCESS
+Application DB configuration  : SUCCESS
+Maven WAR build               : SUCCESS
+RDS database configuration    : SUCCESS
+WAR deployment                : SUCCESS
+Tomcat restart                : SUCCESS
+Application verification      : SUCCESS
+RDS verification              : SUCCESS
+
 ========================================
 '''
         }
@@ -228,9 +272,12 @@ RDS database verified.
 ========================================
  DEPLOYMENT FAILED
 ========================================
+
 Check the Jenkins Console Output.
+
 ========================================
 '''
         }
     }
 }
+
